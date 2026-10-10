@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from database import supabase, execute_supabase
 from schemas import TemplateCreate, UploadResponse
 import uuid
+import os
+
+BUCKET_NAME = os.getenv("SUPABASE_BUCKET_NAME", "assets_image")
 
 # สร้าง Router ตั้ง Prefix เป็น /api
 router = APIRouter(prefix="/api", tags=["Templates & Uploads"])
@@ -149,13 +152,13 @@ def delete_template(template_id: str):
         if urls_to_delete:
             paths_to_delete = []
             for url in urls_to_delete:
-                if "lotto-assets/" in url:
-                    file_path = url.split("lotto-assets/")[1]
+                if f"{BUCKET_NAME}/" in url: 
+                    file_path = url.split(f"{BUCKET_NAME}/")[1]
                     paths_to_delete.append(file_path)
             
             if paths_to_delete:
                 try:
-                    supabase.storage.from_("lotto-assets").remove(paths_to_delete)
+                    supabase.storage.from_(BUCKET_NAME).remove(paths_to_delete)
                 except Exception as storage_err:
                     print(f"⚠️ Failed to delete images from storage: {storage_err}")
 
@@ -169,7 +172,7 @@ async def upload_image(file: UploadFile = File(...)):
         file_content = await file.read()
         file_ext = file.filename.split(".")[-1]
         file_path = f"backgrounds/{uuid.uuid4()}.{file_ext}"
-        bucket_name = "lotto-assets"
+        bucket_name = BUCKET_NAME
         
         supabase.storage.from_(bucket_name).upload(
             path=file_path, file=file_content,

@@ -1,8 +1,11 @@
+import os
 from fastapi import APIRouter, HTTPException, Depends
 from schemas import UserUpdate
 from database import supabase, execute_supabase
 from auth_utils import verify_password, get_password_hash, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from schemas import (UserCreate, UserUpdate)
+
+BUCKET_NAME = os.getenv("SUPABASE_BUCKET_NAME", "assets_image")
 
 # สร้าง Router ตั้ง Prefix เป็น /api/users
 router = APIRouter(prefix="/api/users", tags=["Users"])
@@ -47,14 +50,14 @@ def create_user(request: UserCreate):
 
 # ✅ เพิ่มฟังก์ชันผู้ช่วยลบไฟล์
 def delete_storage_file(url: str):
-    if not url or "lotto-assets/" not in url: 
+    if not url or f"{BUCKET_NAME}/" not in url: 
         return
     try:
-        file_path = url.split("lotto-assets/")[1]
-        supabase.storage.from_("lotto-assets").remove([file_path])
+        file_path = url.split(f"{BUCKET_NAME}/")[1]
+        supabase.storage.from_(BUCKET_NAME).remove([file_path])
     except Exception as e:
         print(f"Failed to delete storage file: {e}")
-
+        
 @router.put("/{user_id}")
 def update_user(user_id: str, request: UserUpdate):
     try:
